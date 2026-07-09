@@ -41,7 +41,7 @@ class RiskManager:
         Calculates an ATR-based stop loss for a long position.
         """
         if not atr or pd.isna(atr):
-            return entry_price * 0.95 # fallback 5%
+            return 0.0 # No stop loss if no ATR
         return entry_price - (atr * multiplier)
 
     def calculate_trailing_stop(self, highest_price_since_entry: float, atr: float, multiplier: float = 2.0) -> float:
@@ -49,5 +49,5 @@ class RiskManager:
         Calculates an ATR-based trailing stop for a long position.
         """
         if not atr or pd.isna(atr):
-            return highest_price_since_entry * 0.95 # fallback 5%
+            return 0.0 # No stop loss if no ATR
         return highest_price_since_entry - (atr * multiplier)

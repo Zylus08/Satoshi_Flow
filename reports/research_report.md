@@ -1,5 +1,5 @@
 # SatoshiFlow V2 Quantitative Research Report
-**Generated:** 2026-07-10 01:03:37
+**Generated:** 2026-07-10 01:22:35
 
 ## 1. Abstract
 This report details the backtest results and robustness checks of a systematic trend-following strategy applied to BTC/USD. The strategy aims to capture multi-week momentum while severely restricting volatility drag via ATR-based position sizing and trailing stops.
@@ -23,15 +23,15 @@ To prevent **lookahead bias**, signals generated at the close of time $t$ are ex
 | CAGR | 18.13% |
 | Annualized Volatility | 18.23% |
 | Sharpe Ratio | 1.00 |
-| Sortino Ratio | 0.76 |
+| Sortino Ratio | 0.54 |
 | Calmar Ratio | 0.67 |
 | Max Drawdown | -26.96% |
 | Ulcer Index | 0.1279 |
 | Return Skewness | 5.11 |
 | Return Kurtosis | 87.18 |
 | Win Rate | 44.83% |
-| Profit Factor | 2.33 |
-| Expectancy | 4716.50% |
+| Profit Factor | 2.23 |
+| Expectancy | 4524.40% |
 | Recovery Factor | 4.81 |
 | Market Exposure | 16.93% |
 

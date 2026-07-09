@@ -30,7 +30,7 @@ class MetricsCalculator:
         sharpe_ratio = (excess_returns.mean() / daily_returns.std()) * np.sqrt(365) if daily_returns.std() != 0 else 0
         
         downside_returns = daily_returns[daily_returns < 0]
-        downside_deviation = downside_returns.std() * np.sqrt(365)
+        downside_deviation = np.sqrt((downside_returns ** 2).mean()) * np.sqrt(365) if not downside_returns.empty else 0
         sortino_ratio = (excess_returns.mean() * 365) / downside_deviation if downside_deviation != 0 else 0
         
         # 4. Drawdowns, Calmar, Ulcer Index

@@ -25,31 +25,25 @@ class SignalGenerator:
         else:
             atr_median = pd.Series(index=df.index, dtype=float)
             
-        signals = []
-        for i in range(len(df)):
-            row = df.iloc[i]
-            
-            # Since rolling calculates based on past, we ensure no lookahead
-            # If NaNs are present (early data), just HOLD
-            if pd.isna(row.get('EMA_20')) or pd.isna(row.get('EMA_50')):
-                signals.append(Signal.HOLD)
-                continue
-                
-            # Filters
-            trend_up = row['EMA_20'] > row['EMA_50']
-            momentum_up = row['RSI_14'] > 55
-            volatility_low = pd.notna(atr_median.iloc[i]) and row['ATR_14'] < atr_median.iloc[i]
-            volume_up = row['Volume_Change'] > 1.0
-            
-            # Simple Exit Logic: Trend reversal or momentum loss
-            trend_down = row['EMA_20'] < row['EMA_50']
-            momentum_down = row['RSI_14'] < 45
-            
-            if trend_up and momentum_up and volatility_low and volume_up:
-                signals.append(Signal.BUY)
-            elif trend_down or momentum_down:
-                signals.append(Signal.SELL)
-            else:
-                signals.append(Signal.HOLD)
-                
-        return pd.Series(signals, index=df.index)
+        # Initialize signals to HOLD
+        signals = pd.Series(Signal.HOLD, index=df.index)
+        
+        # Filters
+        valid_rows = df['EMA_20'].notna() & df['EMA_50'].notna()
+        trend_up = df['EMA_20'] > df['EMA_50']
+        momentum_up = df['RSI_14'] > 55
+        volatility_low = atr_median.notna() & (df['ATR_14'] < atr_median)
+        volume_up = df['Volume_Change'] > 1.0
+        
+        # Simple Exit Logic: Trend reversal or momentum loss
+        trend_down = df['EMA_20'] < df['EMA_50']
+        momentum_down = df['RSI_14'] < 45
+        
+        buy_condition = valid_rows & trend_up & momentum_up & volatility_low & volume_up
+        sell_condition = valid_rows & (trend_down | momentum_down)
+        
+        # We process SELL conditions first, then BUY (if both are true somehow, SELL overrides)
+        signals[buy_condition] = Signal.BUY
+        signals[sell_condition] = Signal.SELL
+        
+        return signals

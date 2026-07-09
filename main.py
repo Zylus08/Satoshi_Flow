@@ -12,11 +12,11 @@ from research.validation import Validator
 
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 
-def run_backtest(df, strategy_obj, name):
+def run_backtest(df, strategy_obj, name, risk_per_trade=0.02):
     logger = logging.getLogger(name)
     logger.info(f"Running Backtest for {name}...")
     df_signals = strategy_obj.generate_signals(df)
-    engine = BacktestEngine(df=df_signals, initial_capital=INITIAL_CAPITAL, fee_rate=BROKERAGE_FEE, slippage_rate=SLIPPAGE_RATE)
+    engine = BacktestEngine(df=df_signals, initial_capital=INITIAL_CAPITAL, fee_rate=BROKERAGE_FEE, slippage_rate=SLIPPAGE_RATE, risk_per_trade=risk_per_trade)
     accountant = engine.run()
     
     portfolio_df = accountant.get_history_df()
@@ -39,8 +39,8 @@ def main():
     main_port, main_trades, main_metrics = run_backtest(df, Strategy(), "Main_Strategy")
     
     # 3. Benchmarks
-    bnh_port, _, bnh_metrics = run_backtest(df, BuyAndHoldStrategy(), "Buy_and_Hold")
-    ema_port, _, ema_metrics = run_backtest(df, EMACrossoverStrategy(), "EMA_Crossover")
+    bnh_port, _, bnh_metrics = run_backtest(df, BuyAndHoldStrategy(), "Buy_and_Hold", risk_per_trade=1.0)
+    ema_port, _, ema_metrics = run_backtest(df, EMACrossoverStrategy(), "EMA_Crossover", risk_per_trade=1.0)
     
     logger.info(f"--- Benchmark Comparison ---")
     logger.info(f"Main Strategy CAGR: {main_metrics.get('CAGR',0):.2%}, Max DD: {main_metrics.get('Max Drawdown',0):.2%}")

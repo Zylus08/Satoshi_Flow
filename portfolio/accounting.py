@@ -64,6 +64,11 @@ class PortfolioAccountant:
         self.holdings += units
         self.average_entry_price = (total_value_held + cost) / self.holdings
         
+        # Track entry fees for PnL
+        if not hasattr(self, 'accumulated_entry_fees'):
+            self.accumulated_entry_fees = 0.0
+        self.accumulated_entry_fees += fee
+        
         self.cash -= total_cost
         self.log_trade(date, 'BUY', price, units, fee)
 
@@ -75,15 +80,25 @@ class PortfolioAccountant:
         fee = revenue * fee_rate
         net_revenue = revenue - fee
         
-        pnl = (price - self.average_entry_price) * units - fee
+        # Proportion of entry fees assigned to this sell
+        proportion_sold = units / self.holdings if self.holdings > 0 else 1.0
+        entry_fees_for_this_trade = getattr(self, 'accumulated_entry_fees', 0.0) * proportion_sold
+        
+        # True Net PnL = Revenue - Cost - ExitFee - EntryFee
+        pnl = (price - self.average_entry_price) * units - fee - entry_fees_for_this_trade
         self.realized_pnl += pnl
         
         self.holdings -= units
         self.cash += net_revenue
         
+        # Reduce accumulated entry fees
+        if hasattr(self, 'accumulated_entry_fees'):
+            self.accumulated_entry_fees -= entry_fees_for_this_trade
+        
         if self.holdings <= 1e-8: # floating point precision check
             self.holdings = 0.0
             self.average_entry_price = 0.0
+            self.accumulated_entry_fees = 0.0
             
         self.log_trade(date, 'SELL', price, units, fee, pnl)
 

@@ -14,21 +14,21 @@ class Validator:
         logger = logging.getLogger("Validator")
         logger.info("Starting Out-Of-Sample (OOS) Testing...")
         
-        # Split: Train (2019-2021), Test (2022-2023)
-        train_df = df[(df['Date'] >= '2019-01-01') & (df['Date'] <= '2021-12-31')].copy()
-        test_df = df[(df['Date'] >= '2022-01-01') & (df['Date'] <= '2023-12-31')].copy()
-        
         strategy = Strategy()
+        # Compute features globally to prevent indicator burn-in during OOS periods
+        df_signals = strategy.generate_signals(df)
+        
+        # Split: Train (2019-2021), Test (2022-2023)
+        train_df = df_signals[(df_signals['Date'] >= '2019-01-01') & (df_signals['Date'] <= '2021-12-31')].copy()
+        test_df = df_signals[(df_signals['Date'] >= '2022-01-01') & (df_signals['Date'] <= '2023-12-31')].copy()
         
         # Train
-        train_signals = strategy.generate_signals(train_df)
-        engine_train = BacktestEngine(train_signals, initial_capital, fee_rate, slippage_rate)
+        engine_train = BacktestEngine(train_df, initial_capital, fee_rate, slippage_rate)
         acc_train = engine_train.run()
         metrics_train = MetricsCalculator.calculate_metrics(acc_train.get_history_df(), acc_train.get_trade_log_df(), initial_capital)
         
         # Test
-        test_signals = strategy.generate_signals(test_df)
-        engine_test = BacktestEngine(test_signals, initial_capital, fee_rate, slippage_rate)
+        engine_test = BacktestEngine(test_df, initial_capital, fee_rate, slippage_rate)
         acc_test = engine_test.run()
         metrics_test = MetricsCalculator.calculate_metrics(acc_test.get_history_df(), acc_test.get_trade_log_df(), initial_capital)
         
@@ -54,17 +54,18 @@ class Validator:
         ]
         
         strategy = Strategy()
+        # Compute features globally to prevent indicator burn-in during OOS periods
+        df_signals = strategy.generate_signals(df)
         all_test_trades = []
         
         for train_start, train_end, test_start, test_end in windows:
             logger.info(f"Walk-Forward Window -> Train: {train_start} to {train_end} | Test: {test_start} to {test_end}")
             
-            test_df = df[(df['Date'] >= test_start) & (df['Date'] <= test_end)].copy()
+            test_df = df_signals[(df_signals['Date'] >= test_start) & (df_signals['Date'] <= test_end)].copy()
             if test_df.empty:
                 continue
                 
-            test_signals = strategy.generate_signals(test_df)
-            engine = BacktestEngine(test_signals, initial_capital, fee_rate, slippage_rate)
+            engine = BacktestEngine(test_df, initial_capital, fee_rate, slippage_rate)
             acc = engine.run()
             
             # Collect trades

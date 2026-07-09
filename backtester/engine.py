@@ -8,10 +8,10 @@ class BacktestEngine:
     """
     Event-driven simulation loop for backtesting.
     """
-    def __init__(self, df: pd.DataFrame, initial_capital: float, fee_rate: float, slippage_rate: float = 0.0):
+    def __init__(self, df: pd.DataFrame, initial_capital: float, fee_rate: float, slippage_rate: float = 0.0, risk_per_trade: float = 0.02):
         self.df = df
         self.accountant = PortfolioAccountant(initial_capital=initial_capital)
-        self.risk_manager = RiskManager(max_exposure=1.0, risk_per_trade=0.02)
+        self.risk_manager = RiskManager(max_exposure=1.0, risk_per_trade=risk_per_trade)
         self.fee_rate = fee_rate
         self.slippage_rate = slippage_rate
         self.logger = logging.getLogger(self.__class__.__name__)
