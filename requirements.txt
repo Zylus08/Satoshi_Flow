@@ -6,3 +6,5 @@ scipy
 typing_extensions
 python-dateutil
 yfinance
+seaborn
+statsmodels

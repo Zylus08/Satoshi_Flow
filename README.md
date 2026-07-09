@@ -1,55 +1,41 @@
-# SatoshiFlow
+# SatoshiFlow V2: Institutional Research Framework
 
-SatoshiFlow is a modular, research-oriented quantitative trading backtesting framework for BTC/USD, built in Python.
+SatoshiFlow V2 is a rigorous quantitative research environment for backtesting and validating systematic trading strategies on BTC/USD.
 
-## Project Overview
-The framework implements a complete end-to-end pipeline from data loading, feature engineering, and signal generation to risk management, backtesting, and performance reporting. It is designed to be highly modular and extensible, mimicking an institutional-grade architecture.
+## V2 Upgrades
+- **Bias Prevention:** Exact execution timing (signals generated at Close are executed at the Open of the following bar) to eliminate lookahead bias.
+- **Slippage Modeling:** Realistic slippage applied to market orders and stop losses.
+- **Benchmark Comparison:** Integrated Buy & Hold and Simple EMA Crossover baselines.
+- **Advanced Metrics:** Institutional metrics including Calmar Ratio, Ulcer Index, Skewness, Kurtosis, and Expectancy.
+- **Robustness Testing:** Multi-dimensional parameter sensitivity analysis to prove generalization and avoid overfitting.
+- **Validation Methods:** Out-of-Sample (OOS) data splits and Walk-Forward Validation loops.
+- **Institutional Visualizations:** Seaborn-powered heatmaps and underwater charts.
 
-## Architecture
+## Project Structure
 ```
 SatoshiFlow/
-├── data/               # Contains historical OHLCV data
-├── indicators/         # Raw indicator implementations and feature pipeline
-├── signals/            # Signal generation logic (BUY/SELL/HOLD)
-├── strategy/           # Strategy rules wrapping features and signals
-├── backtester/         # Event-driven backtesting loop
-├── portfolio/          # Portfolio accounting and risk management
-├── reports/            # Generated performance reports and plots
-├── scripts/            # Helper scripts (e.g., data downloader)
-├── utils/              # Metrics calculation, plotting, reporting
-├── main.py             # Entry point
-├── config.py           # Configuration parameters
-└── requirements.txt    # Project dependencies
+├── data/               # Historical OHLCV data
+├── indicators/         # Raw indicators & feature pipelines
+├── signals/            # Signal generation logic
+├── strategy/           # Strategy rules and baselines (benchmarks.py)
+├── backtester/         # Event-driven execution engine (slippage & timing aware)
+├── portfolio/          # Position sizing, risk, and accounting
+├── research/           # Robustness and validation methodologies
+├── reports/            # Output metrics, heatmaps, and research_report.md
+├── scripts/            # Data collection utilities
+├── utils/              # Calculation, plotting, and markdown reporting
+├── main.py             # Research pipeline execution
+├── config.py           # Core settings (Brokerage, Slippage)
+└── requirements.txt    # Dependencies (numpy, pandas, seaborn, statsmodels)
 ```
 
-## Strategy Explanation
-The current implemented strategy is a long-only trend-following system:
-- **Trend Filter:** 20-day EMA > 50-day EMA
-- **Momentum Filter:** 14-day RSI > 55
-- **Volatility Filter:** 14-day ATR < 20-day median ATR
-- **Volume Filter:** Current volume > 20-day volume moving average
-
-**Risk Management:**
-Positions are sized based on ATR (risking 2% of capital per 1 ATR). An ATR-based trailing stop is employed to lock in profits.
-
-## Installation
-1. Clone the repository.
-2. Install the required dependencies:
+## Running the Research Pipeline
+1. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
-## Usage
-1. Download historical data:
-   ```bash
-   python scripts/download_data.py
-   ```
-2. Run the backtester:
+2. Run the main research script:
    ```bash
    python main.py
    ```
-3. View the generated metrics, visualizations, and `report.md` in the `reports/` directory.
-
-## Limitations & Future Work
-- **Limitations:** The strategy only trades long. It might suffer during extended bear markets or choppy sideways regimes. Slippage and market impact are currently not modeled.
-- **Future Work:** Add short selling, Walk-Forward Validation, Slippage modeling, and multi-asset support.
+3. Check the `reports/` directory for the comprehensive academic Markdown report, sensitivity tables, and visual analysis.

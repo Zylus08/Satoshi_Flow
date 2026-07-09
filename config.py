@@ -19,6 +19,7 @@ CSV_FILE_PATH = DATA_DIR / "btc_usd.csv"
 # Backtest Settings
 INITIAL_CAPITAL = 1000.0
 BROKERAGE_FEE = 0.0015  # 0.15%
+SLIPPAGE_RATE = 0.0005  # 0.05%
 
 # Logging Settings
 LOG_LEVEL = "INFO"
