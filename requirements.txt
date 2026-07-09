@@ -1,0 +1,8 @@
+numpy
+pandas
+matplotlib
+plotly
+scipy
+typing_extensions
+python-dateutil
+yfinance
