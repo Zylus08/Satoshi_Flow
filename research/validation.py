@@ -14,21 +14,21 @@ class Validator:
         logger = logging.getLogger("Validator")
         logger.info("Starting Out-Of-Sample (OOS) Testing...")
         
+        # Split raw data first
+        train_raw = df[(df['Date'] >= '2019-01-01') & (df['Date'] <= '2021-12-31')].copy()
+        test_raw = df[(df['Date'] >= '2022-01-01') & (df['Date'] <= '2023-12-31')].copy()
+        
         strategy = Strategy()
-        # Compute features globally to prevent indicator burn-in during OOS periods
-        df_signals = strategy.generate_signals(df)
         
-        # Split: Train (2019-2021), Test (2022-2023)
-        train_df = df_signals[(df_signals['Date'] >= '2019-01-01') & (df_signals['Date'] <= '2021-12-31')].copy()
-        test_df = df_signals[(df_signals['Date'] >= '2022-01-01') & (df_signals['Date'] <= '2023-12-31')].copy()
-        
-        # Train
-        engine_train = BacktestEngine(train_df, initial_capital, fee_rate, slippage_rate)
+        # Train (Fit & Transform)
+        train_signals = strategy.fit_transform_and_generate(train_raw)
+        engine_train = BacktestEngine(train_signals, initial_capital, fee_rate, slippage_rate)
         acc_train = engine_train.run()
         metrics_train = MetricsCalculator.calculate_metrics(acc_train.get_history_df(), acc_train.get_trade_log_df(), initial_capital)
         
-        # Test
-        engine_test = BacktestEngine(test_df, initial_capital, fee_rate, slippage_rate)
+        # Test (Transform using fitted pipeline)
+        test_signals = strategy.transform_and_generate(test_raw)
+        engine_test = BacktestEngine(test_signals, initial_capital, fee_rate, slippage_rate)
         acc_test = engine_test.run()
         metrics_test = MetricsCalculator.calculate_metrics(acc_test.get_history_df(), acc_test.get_trade_log_df(), initial_capital)
         
@@ -53,19 +53,25 @@ class Validator:
             ('2021-01-01', '2022-12-31', '2023-01-01', '2023-12-31')
         ]
         
-        strategy = Strategy()
-        # Compute features globally to prevent indicator burn-in during OOS periods
-        df_signals = strategy.generate_signals(df)
         all_test_trades = []
         
         for train_start, train_end, test_start, test_end in windows:
             logger.info(f"Walk-Forward Window -> Train: {train_start} to {train_end} | Test: {test_start} to {test_end}")
             
-            test_df = df_signals[(df_signals['Date'] >= test_start) & (df_signals['Date'] <= test_end)].copy()
-            if test_df.empty:
+            # Split raw data
+            train_raw = df[(df['Date'] >= train_start) & (df['Date'] <= train_end)].copy()
+            test_raw = df[(df['Date'] >= test_start) & (df['Date'] <= test_end)].copy()
+            
+            if test_raw.empty or train_raw.empty:
                 continue
                 
-            engine = BacktestEngine(test_df, initial_capital, fee_rate, slippage_rate)
+            strategy = Strategy()
+            # Fit pipeline on training data
+            _ = strategy.fit_transform_and_generate(train_raw)
+            # Transform test data seamlessly
+            test_signals = strategy.transform_and_generate(test_raw)
+                
+            engine = BacktestEngine(test_signals, initial_capital, fee_rate, slippage_rate)
             acc = engine.run()
             
             # Collect trades

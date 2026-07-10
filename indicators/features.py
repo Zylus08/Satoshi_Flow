@@ -5,18 +5,52 @@ from .core import (
     calculate_rolling_volatility, calculate_sma
 )
 
-class FeatureEngineer:
+class FeaturePipeline:
     """
-    Constructs features from base indicators. Designed to avoid lookahead bias.
+    Constructs features from base indicators using a fit/transform ML workflow.
+    Designed to avoid lookahead bias and support future ML model pipelines.
     """
-    
-    @staticmethod
-    def build_features(df: pd.DataFrame) -> pd.DataFrame:
+    def __init__(self, lookback_window: int = 100):
+        self.lookback_window = lookback_window
+        self.history = None
+
+    def fit(self, df: pd.DataFrame):
         """
-        Adds engineered features to the provided OHLCV DataFrame in-place.
+        Fits the pipeline. For purely causal indicators, this simply stores the 
+        tail of the training data to prevent indicator burn-in (NaNs) in the test set.
         """
-        df = df.copy()
+        if len(df) > 0:
+            self.history = df.tail(self.lookback_window).copy()
+        return self
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Transforms the dataframe, adding engineered features.
+        """
+        is_test = False
+        if self.history is not None and len(df) > 0:
+            # Check if this is a test set that needs warm-up data
+            # Assumes index is sorted and time-based
+            if df.index[0] > self.history.index[-1]:
+                is_test = True
+                combined = pd.concat([self.history, df])
+            else:
+                combined = df.copy()
+        else:
+            combined = df.copy()
+            
+        combined = self._compute_features(combined)
         
+        if is_test:
+            # Return only the portion corresponding to the requested df
+            return combined.loc[df.index].copy()
+        return combined
+
+    def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        self.fit(df)
+        return self.transform(df)
+
+    def _compute_features(self, df: pd.DataFrame) -> pd.DataFrame:
         df['EMA_20'] = calculate_ema(df['Close'], 20)
         df['EMA_50'] = calculate_ema(df['Close'], 50)
         df['Trend_Strength'] = (df['EMA_20'] - df['EMA_50']) / df['EMA_50']
@@ -41,5 +75,4 @@ class FeatureEngineer:
         df['Price_Momentum'] = df['Close'] / df['SMA_20']
         
         df.ffill(inplace=True)
-
         return df

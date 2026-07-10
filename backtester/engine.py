@@ -21,6 +21,7 @@ class BacktestEngine:
         self.logger.info("Starting backtest simulation (V2)...")
         
         stop_loss_price = None
+        highest_price_since_entry = None
         pending_signal = Signal.HOLD
         pending_atr = None
         
@@ -48,6 +49,7 @@ class BacktestEngine:
                 
                 if units > 0:
                     self.accountant.execute_buy(date, exec_price, units, self.fee_rate)
+                    highest_price_since_entry = exec_price
                     stop_loss_price = self.risk_manager.calculate_stop_loss(
                         entry_price=exec_price, 
                         atr=pending_atr
@@ -57,6 +59,7 @@ class BacktestEngine:
                 exec_price = open_price * (1 - self.slippage_rate)
                 self.accountant.execute_sell(date, exec_price, self.accountant.holdings, self.fee_rate)
                 stop_loss_price = None
+                highest_price_since_entry = None
                 
             pending_signal = Signal.HOLD
             pending_atr = None
@@ -70,6 +73,11 @@ class BacktestEngine:
                     self.logger.debug(f"{date} - Stop Loss Triggered at {exec_price}")
                     self.accountant.execute_sell(date, exec_price, self.accountant.holdings, self.fee_rate)
                     stop_loss_price = None
+                    highest_price_since_entry = None
+            
+            # Update highest price after intra-bar stop check
+            if self.accountant.holdings > 0 and highest_price_since_entry is not None:
+                highest_price_since_entry = max(highest_price_since_entry, high_price)
             
             # 3. Process Signals Generated at the CLOSE of the current bar (to be executed next bar)
             signal = getattr(row, 'Signal', Signal.HOLD)
@@ -79,10 +87,10 @@ class BacktestEngine:
                 pending_signal = signal
                 pending_atr = atr if not pd.isna(atr) else None
                 
-            # 4. Update Trailing Stop based on current Close
+            # 4. Update Trailing Stop based on highest price reached
             if self.accountant.holdings > 0 and stop_loss_price:
                 new_stop = self.risk_manager.calculate_trailing_stop(
-                     highest_price_since_entry=current_close, 
+                     highest_price_since_entry=highest_price_since_entry, 
                      atr=atr if not pd.isna(atr) else None
                 )
                 if new_stop > stop_loss_price:
