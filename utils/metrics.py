@@ -29,8 +29,8 @@ class MetricsCalculator:
         excess_returns = daily_returns - (risk_free_rate / 365)
         sharpe_ratio = (excess_returns.mean() / daily_returns.std()) * np.sqrt(365) if daily_returns.std() != 0 else 0
         
-        downside_returns = daily_returns[daily_returns < 0]
-        downside_deviation = np.sqrt((downside_returns ** 2).mean()) * np.sqrt(365) if not downside_returns.empty else 0
+        downside_returns = np.minimum(daily_returns, 0)
+        downside_deviation = np.sqrt(np.mean(downside_returns ** 2)) * np.sqrt(365) if downside_returns.size > 0 else 0
         sortino_ratio = (excess_returns.mean() * 365) / downside_deviation if downside_deviation != 0 else 0
         
         # 4. Drawdowns, Calmar, Ulcer Index
@@ -70,7 +70,7 @@ class MetricsCalculator:
                 gross_profit = winning_trades['PnL'].sum()
                 gross_loss = abs(losing_trades['PnL'].sum())
                 
-                profit_factor = gross_profit / gross_loss if gross_loss != 0 else float('inf')
+                profit_factor = gross_profit / gross_loss if gross_loss != 0 else float('NaN')
                 avg_trade_return = sells['PnL'].mean()
                 
                 expectancy = (win_rate * avg_win) - (loss_rate * avg_loss)
